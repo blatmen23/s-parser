@@ -19,6 +19,7 @@ class DataParser(object):
         self.students = None
 
     def parse_data(self):
+        print("Идет парсинг...")
         # перебираем институты
         for institute in list(self.institutes.keys()):
             url = f"https://old.kai.ru/info/students/brs.php?p_fac={self.institutes[institute][0]}"
@@ -50,3 +51,20 @@ class DataParser(object):
                         if student[0] == "" or student[1] == "":
                             continue
                         # print(self.institutes[institute][1], course[1], group[1], student[1])
+        print("парсинг.")
+
+    # def parse_elders(self):
+    #     for id in range(0, 30000):
+    #         url = f"https://kai.ru/infoClick/-/info/group?id={id}"
+    #         page = requests.get(url)
+    #         soup = BeautifulSoup(page.content, 'lxml')
+    #         if soup.find("div", {"class": "alert-info"}):
+    #             print(str(id) + " alert-info")
+    #             continue
+    #
+    #         students_row = soup.find("tbody").find_all("tr")
+    #         for student_row in students_row:
+    #             student_columns = student_row.find_all("td")
+    #             student_name_column = student_columns[1]
+    #             if student_name_column.find("span"):
+    #                 print(id, " ".join(student_name_column.text.split()[:-1:]))
