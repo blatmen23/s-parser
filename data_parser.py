@@ -1,8 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
 
-from config import *
-
 
 class DataParser(object):
     def __init__(self):
@@ -17,6 +15,7 @@ class DataParser(object):
         self.courses = None
         self.groups = None
         self.students = None
+        self.elder = False
 
     def parse_data(self):
         print("Идет парсинг...")
@@ -46,11 +45,11 @@ class DataParser(object):
                     # достаём студентов этой группы, этого курса, этого института
                     tags = soup.find("select", {"name": "p_stud"}).find_all("option")
                     self.students = [(tag["value"], tag.text) for tag in tags]
-
                     for student in self.students:
                         if student[0] == "" or student[1] == "":
                             continue
-                        # print(self.institutes[institute][1], course[1], group[1], student[1])
+                        # print(self.institutes[institute][1], course[1], group[1], student[1], elder)
+                        yield (self.institutes[institute], course, group, student, self.elder)
         print("парсинг.")
 
     # def parse_elders(self):

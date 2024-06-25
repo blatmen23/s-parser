@@ -2,13 +2,13 @@ MYSQL_HOST = "localhost"
 MYSQL_PORT = 3306
 MYSQL_USERNAME = "root"
 MYSQL_PASSWORD = ""
-DB_NAME = "group-finder"
+MYSQL_DB_NAME = "s_parser"
 
 # MYSQL_HOST = "localhost"
 # MYSQL_PORT = 3306
 # MYSQL_USERNAME = "dindilon20_1"
 # MYSQL_PASSWORD = '1ALCMbKGC%DTYSVC'
-# DB_NAME = "dindilon20_1"
+# MYSQL_DB_NAME = "dindilon20_1"
 
 TG_TOKEN = "6941514577:AAHnoxpxGRHv_oNa8lzFzIz9RKoeUGdQkvs"
 TG_ADMIN = "1194876075"
