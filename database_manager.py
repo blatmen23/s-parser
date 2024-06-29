@@ -1,13 +1,14 @@
 import pymysql.cursors
 
 class DatabaseManager(object):
+    connection = None
+
     def __init__(self, host: str, port: int, user: str, password:str, database: str):
         self.host = host
         self.user = user
         self.port = port
         self.password = password
         self.database = database
-        self.connection = None
 
     def connect(self):
         try:
@@ -23,52 +24,67 @@ class DatabaseManager(object):
             print(f"Не удалось подключиться к базе данных: {ex}")
             raise ex
 
-    def create_tables(self):
+    def prepare_tables(self):
         with self.connection.cursor() as cursor:
-            # создаст таблицу institutes, если её не существует
+            # создаст таблицу Institutes, если её не существует
             cursor.execute(f"""
-                CREATE TABLE IF NOT EXISTS institutes (
-                institute_id INT PRIMARY KEY,
+                CREATE TABLE IF NOT EXISTS Institutes (
+                institute_id INT UNIQUE PRIMARY KEY,
                 institute_name VARCHAR(255) NOT NULL,
                 institute_num INT NOT NULL);""")
-            print("Обновлена таблица institutes")
+            print("Приведена таблица Institutes")
 
-            # создаст таблицу courses, если её не существует
+            # создаст таблицу Courses, если её не существует
             cursor.execute(f"""
-                CREATE TABLE IF NOT EXISTS courses (
-                course_id INT PRIMARY KEY,
-                course_name INT NOT NULL);""")
-            print("Обновлена таблица courses")
+                CREATE TABLE IF NOT EXISTS Courses (
+                course_id INT UNIQUE PRIMARY KEY,
+                course_name VARCHAR(16) NOT NULL);""")
+            print("Приведена таблица Courses")
 
-            # создаст таблицу groups, если её не существует
+            # создаст таблицу StudentGroups, если её не существует
             cursor.execute(f"""
-                CREATE TABLE IF NOT EXISTS students_groups (
-                group_id INT PRIMARY KEY,
-                group_name INT NOT NULL,
-                course_id INT NOT NULL,
-                institute_id INT NOT NULL,
-                FOREIGN KEY(course_id) REFERENCES courses(course_id), 
-                FOREIGN KEY(institute_id) REFERENCES institutes(institute_id));""")
-            print("Обновлена таблица groups")
+                CREATE TABLE IF NOT EXISTS StudentGroups (
+                group_id INT UNIQUE,
+                group_name VARCHAR(16) NOT NULL,
+                institute INT,
+                course INT,
+                PRIMARY KEY (group_id),
+                FOREIGN KEY (institute) REFERENCES Institutes (institute_id),
+                FOREIGN KEY (course) REFERENCES Courses (course_id));""")
+            print("Приведена таблица StudentGroups")
 
-            # создаст таблицу students, если её не существует
+            # создаст таблицу Students, если её не существует
             cursor.execute(f"""
-                CREATE TABLE IF NOT EXISTS students (
-                student_id INT PRIMARY KEY,
+                CREATE TABLE IF NOT EXISTS Students (
+                student_id INT UNIQUE,
                 student_name VARCHAR(255) NOT NULL,
-                group_id INT NOT NULL,
-                course_id INT NOT NULL,
-                institute_id INT NOT NULL,
-                FOREIGN KEY(group_id) REFERENCES students_groups(group_id),
-                FOREIGN KEY(course_id) REFERENCES courses(course_id), 
-                FOREIGN KEY(institute_id) REFERENCES institutes(institute_id));""")
-            print("Обновлена таблица students")
+                student_group INT,
+                leader BOOLEAN NOT NULL,
+                PRIMARY KEY (student_id),
+                FOREIGN KEY (student_group) REFERENCES StudentGroups (group_id));""")
+            print("Приведена таблица Students")
 
-            # создаст таблицу students_tmp, если её не существует
+            # создаст таблицу Students_tmp, если её не существует
             cursor.execute(f"""
-                CREATE TABLE IF NOT EXISTS students_tmp LIKE s_parser.students;""")
-            print("Обновлена таблица students_tmp")
+                CREATE TABLE IF NOT EXISTS Students (
+                student_id INT UNIQUE,
+                student_name VARCHAR(255) NOT NULL,
+                student_group INT,
+                leader BOOLEAN NOT NULL,
+                PRIMARY KEY (student_id),
+                FOREIGN KEY (student_group) REFERENCES StudentGroups (group_id));""")
+            print("Приведена таблица Students")
 
+    def save_data(self, chunk_data):
+        with self.connection.cursor() as cursor:
+            cursor.execute(f"""REPLACE INTO Courses (course_id, course_name) VALUES (%s, %s);""",
+                           (chunk_data['course'][0], chunk_data['course'][1]))
+            cursor.execute(f"""REPLACE INTO Institutes (institute_id, institute_name, institute_num) VALUES (%s, %s, %s);""",
+                           (chunk_data['institute'][0], chunk_data['institute'][1], chunk_data['institute_num']))
+            self.connection.commit()
+            # cursor.execute(f"""REPLACE INTO StudentGroups (group_id, group_name, institute, course)
+            #                     VALUES ({chunk_data['group'][0]}, {chunk_data['group'][1]}, {chunk_data['institute'][0]}, {chunk_data['course'][0]});""")
+            # self.connection.commit()
 
     def close(self):
         self.connection.close()

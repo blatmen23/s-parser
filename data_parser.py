@@ -15,7 +15,7 @@ class DataParser(object):
         self.courses = None
         self.groups = None
         self.students = None
-        self.elder = False
+        self.leader = False
 
     def parse_data(self):
         print("Идет парсинг...")
@@ -36,7 +36,6 @@ class DataParser(object):
                 # достаём группы этого курса, этого института
                 tags = soup.find("select", {"name": "p_group"}).find_all("option")
                 self.groups = [(tag["value"], tag.text) for tag in tags]
-
                 # перебираем все группы, этого курса, этого института
                 for group in self.groups:
                     url = f"https://old.kai.ru/info/students/brs.php?p_fac={self.institutes[institute][0]}&p_kurs={course[0]}&p_group={group[0]}"
@@ -48,8 +47,12 @@ class DataParser(object):
                     for student in self.students:
                         if student[0] == "" or student[1] == "":
                             continue
-                        # print(self.institutes[institute][1], course[1], group[1], student[1], elder)
-                        yield (self.institutes[institute], course, group, student, self.elder)
+                        yield {'institute': self.institutes[institute],
+                               'institute_num': institute,
+                               'course': course,
+                               'group': group,
+                               'student': student,
+                               'leader': self.leader}
         print("парсинг.")
 
     # def parse_elders(self):
