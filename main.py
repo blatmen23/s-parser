@@ -1,6 +1,5 @@
 from data_parser import DataParser
 from database_manager import DatabaseManager
-
 from config import *
 
 parser = DataParser()
@@ -11,5 +10,4 @@ db_manager.prepare_tables()
 
 for chunk_data in parser.parse_data():
     db_manager.save_data(chunk_data)
-
 # db_manager.close()

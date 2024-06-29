@@ -31,8 +31,8 @@ class DatabaseManager(object):
                 self.connection.begin()
                 print("Открыта транзакция prepare_tables")
 
-                cursor.execute(f"DROP TABLE IF EXISTS Institutes_tmp, Courses_tmp, StudentGroups_tmp, Students_tmp;")
-                print("временные таблицы очищены")
+                cursor.execute("DROP TABLE IF EXISTS Institutes_tmp, Courses_tmp, StudentGroups_tmp, Students_tmp;")
+                print("tmp таблицы очищены")
 
                 cursor.execute(f"""
                     CREATE TABLE IF NOT EXISTS Institutes (
@@ -42,19 +42,10 @@ class DatabaseManager(object):
                 print("Приведена таблица Institutes")
 
                 cursor.execute(f"""
-                    CREATE TABLE IF NOT EXISTS Institutes_tmp 
-                        SELECT * FROM Institutes;""")
-                print("Приведена таблица Institutes_tmp")
-
-                cursor.execute(f"""
                     CREATE TABLE IF NOT EXISTS Courses (
                     course_id INT UNIQUE PRIMARY KEY,
                     course_name VARCHAR(16) NOT NULL);""")
                 print("Приведена таблица Courses")
-
-                cursor.execute(f"""CREATE TABLE IF NOT EXISTS Courses_tmp 
-                        SELECT * FROM Courses;""")
-                print("Приведена таблица Courses_tmp")
 
                 cursor.execute(f"""
                     CREATE TABLE IF NOT EXISTS StudentGroups (
@@ -67,10 +58,6 @@ class DatabaseManager(object):
                     FOREIGN KEY (course) REFERENCES Courses (course_id));""")
                 print("Приведена таблица StudentGroups")
 
-                cursor.execute(f"""CREATE TABLE IF NOT EXISTS StudentGroups_tmp
-                        SELECT * FROM StudentGroups;""")
-                print("Приведена таблица StudentGroups_tmp")
-
                 cursor.execute(f"""
                     CREATE TABLE IF NOT EXISTS Students (
                     student_id INT UNIQUE,
@@ -81,9 +68,28 @@ class DatabaseManager(object):
                     FOREIGN KEY (student_group) REFERENCES StudentGroups (group_id));""")
                 print("Приведена таблица Students")
 
+                cursor.execute(f"""CREATE TABLE IF NOT EXISTS Institutes_tmp 
+                        SELECT * FROM Institutes;""")
+                print("Приведена таблица Institutes_tmp")
+
+                cursor.execute(f"""CREATE TABLE IF NOT EXISTS Courses_tmp 
+                        SELECT * FROM Courses;""")
+                print("Приведена таблица Courses_tmp")
+
+                cursor.execute(f"""CREATE TABLE IF NOT EXISTS StudentGroups_tmp
+                        SELECT * FROM StudentGroups;""")
+                print("Приведена таблица StudentGroups_tmp")
+
                 cursor.execute(f"""CREATE TABLE IF NOT EXISTS Students_tmp 
                         SELECT * FROM Students;""")
                 print("Приведена таблица Students_tmp")
+
+                cursor.execute("DELETE FROM Institutes;")
+                cursor.execute("DELETE FROM Courses;")
+                cursor.execute("DELETE FROM StudentGroups;")
+                cursor.execute("DELETE FROM Students;")
+                print("Копирование в tmp таблицы завершено, основные таблицы очищены")
+
                 # отправляем изменения, так как ошибок не возникло
                 self.connection.commit()
                 print("Транзакция prepare_tables прошла успешно")
@@ -97,6 +103,12 @@ class DatabaseManager(object):
     #                     JOIN Students ON group_id = student_group
     #                     JOIN Institutes ON institute = institute_id
     #                     JOIN Courses ON course = course_id;
+
+    def get_different_tables(self):
+        with self.connection.cursor() as cursor:
+            cursor.execute(f"""
+                SELECT * """)
+
     def check_existence(self, column, table, value):
         with self.connection.cursor() as cursor:
             if cursor.execute(f"SELECT {column} FROM {table} WHERE {column} = {value};"):
@@ -120,9 +132,9 @@ class DatabaseManager(object):
 
             if not self.check_existence("student_id", "Students", chunk_data['student'][0]):
                 cursor.execute(f"""INSERT INTO Students (student_id, student_name, student_group, leader) VALUES (%s, %s, %s, %s);""",
-                               (chunk_data['student'][0], chunk_data['student'][0], chunk_data['group'][0], chunk_data['leader']))
+                               (chunk_data['student'][0], chunk_data['student'][1], chunk_data['group'][0], chunk_data['leader']))
 
-            # print(chunk_data)
+            print(chunk_data)
             self.connection.commit()
 
     def close(self):
