@@ -10,7 +10,6 @@ db_manager.connect()
 db_manager.prepare_tables()
 
 for chunk_data in parser.parse_data():
-    print(chunk_data)
     db_manager.save_data(chunk_data)
 
 # db_manager.close()
