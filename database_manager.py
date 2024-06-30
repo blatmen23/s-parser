@@ -25,12 +25,27 @@ class DatabaseManager(object):
             print(f"Не удалось подключиться к базе данных: {ex}")
             raise ex
 
+    def close(self):
+        self.connection.close()
+
     def prepare_tables(self):
         with self.connection.cursor() as cursor:
             try:
                 # начинаем транзакцию
                 self.connection.begin()
                 print("Открыта транзакция prepare_tables")
+
+                cursor.execute(f"""
+                    CREATE TABLE IF NOT EXISTS StudentArchive (
+                        record_id INT AUTO_INCREMENT PRIMARY KEY,
+                        institute_name VARCHAR(255) NOT NULL,
+                        course_name VARCHAR(16) NOT NULL,
+                        group_name VARCHAR(16) NOT NULL,
+                        student_name VARCHAR(255) NOT NULL,
+                        student_id INT NOT NULL,
+                        record_time DATETIME NOT NULL DEFAULT NOW()
+                    );""")
+                print("Приведена таблица StudentArchive")
 
                 cursor.execute("DROP TABLE IF EXISTS Institutes_tmp, Courses_tmp, StudentGroups_tmp, Students_tmp;")
                 print("tmp таблицы очищены")
@@ -99,12 +114,6 @@ class DatabaseManager(object):
                 print(f"Не удалось завершить транзакцию prepare_tables: {ex}")
                 raise ex
 
-    # SELECT Institutes.*, Courses.*, StudentGroups.*, Students.*
-    #                     FROM StudentGroups
-    #                     JOIN Students ON group_id = student_group
-    #                     JOIN Institutes ON institute = institute_id
-    #                     JOIN Courses ON course = course_id;
-
     def get_different_tables(self):
         with self.connection.cursor() as cursor:
             difference = {}
@@ -164,6 +173,7 @@ class DatabaseManager(object):
                     );""")
             difference['group_change'] = cursor.fetchall()
 
+            print("difference объект создан")
             return difference
 
     def _check_existence(self, column, table, value):
@@ -198,5 +208,34 @@ class DatabaseManager(object):
             # print(chunk_data)
             self.connection.commit()
 
+    def _get_name_attributes(self, student_id):
+        with self.connection.cursor() as cursor:
+            cursor.execute(f"""
+                SELECT institute_name,
+                    course_name,
+                    group_name,
+                    student_name
+                FROM Students_tmp
+                    JOIN StudentGroups_tmp ON Students_tmp.student_group = StudentGroups_tmp.group_id
+                    JOIN Courses_tmp ON StudentGroups_tmp.course = Courses_tmp.course_id
+                    JOIN Institutes_tmp ON StudentGroups_tmp.institute = Institutes_tmp.institute_id
+                WHERE Students_tmp.student_id = {student_id};
+            """)
+            name_attributes = cursor.fetchone()
+            return name_attributes
+
+    def archive_data(self, left_students):
+        with self.connection.cursor() as cursor:
+            for student in left_students:
+                name_attributes = self._get_name_attributes(student['student_id'])
+                cursor.execute("""INSERT INTO StudentArchive (institute_name, course_name, group_name, student_name, student_id)
+                    VALUES(%s, %s, %s, %s, %s);""",
+                               (name_attributes['institute_name'],
+                                name_attributes['course_name'],
+                                name_attributes['group_name'],
+                                name_attributes['student_name'],
+                                student['student_id']))
+                self.connection.commit()
+            print("Отчисленные студенты загружены в архив")
     def close(self):
         self.connection.close()
