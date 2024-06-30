@@ -1,3 +1,4 @@
 
 
-class DataAnalyzer():
+class DataAnalyzer(object):
+    ...
