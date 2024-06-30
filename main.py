@@ -8,7 +8,7 @@ db_manager = DatabaseManager(host=MYSQL_HOST, port=MYSQL_PORT, user=MYSQL_USERNA
 
 db_manager.connect()
 # db_manager.prepare_tables()
-
+#
 # for chunk_data in parser.parse_data():
 #     db_manager.save_data(chunk_data)
 

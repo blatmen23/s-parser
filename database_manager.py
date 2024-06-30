@@ -138,7 +138,7 @@ class DatabaseManager(object):
                     CASE
                         WHEN Students.leader = 1 THEN "promotion"
                         WHEN Students.leader = 0 THEN "demotion"
-                    END AS status
+                    END AS status,
                     Students.student_group
                 FROM Students -- убираем всех только-что зачисленных студентов
                     LEFT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
