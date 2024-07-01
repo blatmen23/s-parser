@@ -154,10 +154,11 @@ class DatabaseManager(object):
 
             cursor.execute("""
                 SELECT Students.student_id,
+                    Students.student_name,
                     CASE
                         WHEN Students.leader <> 0 THEN "promotion"
                         WHEN Students.leader = 0 THEN "demotion"
-                    END AS STATUS,
+                    END AS status,
                     Students.student_group
                 FROM Students -- убираем всех только-что зачисленных студентов
                     LEFT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
@@ -167,11 +168,16 @@ class DatabaseManager(object):
 
             cursor.execute("""
                 SELECT Students.student_id,
-                    Students.student_group AS 'new_group',
-                    Students_tmp.student_group AS 'last_group'
+                    Students.student_name,
+                    Students.student_group AS 'new_group_id',
+                    Students_tmp.student_group AS 'last_group_id',
+                    StudentGroups.group_name AS 'new_group_name',
+                    StudentGroups_tmp.group_name AS 'last_group_name'
                 FROM Students
                     LEFT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
-                    AND Students.student_group <> Students_tmp.student_group
+                        AND Students.student_group <> Students_tmp.student_group
+                    JOIN StudentGroups ON Students.student_group = StudentGroups.group_id
+                    JOIN StudentGroups_tmp ON Students_tmp.student_group = StudentGroups_tmp.group_id
                 WHERE Students_tmp.student_id IS NOT NULL""")
             difference['group_change'] = cursor.fetchall()
 

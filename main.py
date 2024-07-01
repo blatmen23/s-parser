@@ -1,6 +1,7 @@
 from data_parser import DataParser
 from database_manager import DatabaseManager
 from data_analyzer import DataAnalyzer
+from
 
 import time
 
@@ -32,5 +33,7 @@ analyzer.get_report(differences=table_differences,
                     total_students=db_manager.get_total_students(),
                     total_groups=db_manager.get_total_groups(),
                     )
+
+
 
 db_manager.close()
