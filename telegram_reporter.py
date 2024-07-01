@@ -9,7 +9,9 @@ class TelegramReporter(object):
         file = {'document': open(file_path, 'rb')}
         data = {'chat_id': self.chat_id,
                 'caption': caption}
-        url = f'https://api.telegram.org/bot{self.tg_token}/sendPhoto'
+        url = f'https://api.telegram.org/bot{self.tg_token}/sendDocument'
         response = requests.post(url, files=file, data=data)
+        if response:
+            print(f"{file_path} отправлен в телеграм")
 
 

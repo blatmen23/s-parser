@@ -10,6 +10,7 @@ class DataAnalyzer(object):
         with open(file_path, "w", encoding="utf-8") as file:
             json.dump(difference, file, ensure_ascii=False)
         print(f"difference объект сохранён как {file_name}")
+        return file_path
 
     def _save_report(self, report: str):
         file_name = f"report_{date.today()}.txt"
@@ -17,6 +18,7 @@ class DataAnalyzer(object):
         with open(file_path, "w", encoding="utf-8") as file:
             file.write(report)
         print(f"report объект сохранён как {file_name}")
+        return file_path
 
     def _get_time_difference(self, start_time: int, end_time: int):
         time_difference = end_time - start_time
@@ -26,8 +28,6 @@ class DataAnalyzer(object):
         return f"{hours}:{minutes}:{seconds}"
 
     def get_report(self, differences: dict, start_time: int, end_time: int, total_students: int, total_groups: int):
-        self._save_differences(differences)
-
         all_new_groups = "\n".join([str(group["group_id"]) + " - " + str(group["group_name"]) for group in differences["new_groups"]])
         all_deleted_groups = "\n".join([str(group["group_id"]) + " - " + str(group["group_name"]) for group in differences["deleted_groups"]])
 
@@ -54,5 +54,6 @@ class DataAnalyzer(object):
                           f'Студенты изменившие группу: {len(differences["group_change"])}\n'
                           f'{all_group_changes}\n')
 
-        self._save_report(report_content)
-        print(report_content)
+        differences_file_path = self._save_differences(differences)
+        report_file_path = self._save_report(report_content)
+        return differences_file_path, report_file_path
