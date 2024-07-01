@@ -1,6 +1,6 @@
+import datetime
 import requests
 from bs4 import BeautifulSoup
-
 
 class DataParser(object):
     courses = None
@@ -17,7 +17,7 @@ class DataParser(object):
     }
 
     def parse_data(self):
-        print("Идет парсинг...")
+        print(f"{datetime.datetime.now().time()} > Начало парсинга")
         # перебираем институты
         for institute in list(self.institutes.keys()):
             url = f"https://old.kai.ru/info/students/brs.php?p_fac={self.institutes[institute][0]}"
@@ -52,7 +52,7 @@ class DataParser(object):
                                'group': group,
                                'student': student,
                                'leader': self.leader}
-        print("парсинг.")
+        print(f"{datetime.datetime.now().time()} > конец парсинга.")
 
     # def parse_elders(self):
     #     for id in range(0, 30000):

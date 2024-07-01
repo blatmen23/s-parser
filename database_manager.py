@@ -114,6 +114,16 @@ class DatabaseManager(object):
                 print(f"Не удалось завершить транзакцию prepare_tables: {ex}")
                 raise ex
 
+    def get_total_students(self):
+        with self.connection.cursor() as cursor:
+            cursor.execute("""SELECT COUNT(student_id) as count FROM Students""")
+            return cursor.fetchone()['count']
+
+    def get_total_groups(self):
+        with self.connection.cursor() as cursor:
+            cursor.execute("""SELECT COUNT(group_id) as count FROM StudentGroups""")
+            return cursor.fetchone()['count']
+
     def get_different_tables(self):
         with self.connection.cursor() as cursor:
             difference = {}
@@ -145,32 +155,24 @@ class DatabaseManager(object):
             cursor.execute("""
                 SELECT Students.student_id,
                     CASE
-                        WHEN Students.leader = 1 THEN "promotion"
+                        WHEN Students.leader <> 0 THEN "promotion"
                         WHEN Students.leader = 0 THEN "demotion"
-                    END AS status,
+                    END AS STATUS,
                     Students.student_group
                 FROM Students -- убираем всех только-что зачисленных студентов
                     LEFT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
-                WHERE Students_tmp.student_id IS NOT NULL
-                    AND (Students.student_id, Students.leader) NOT IN (
-                        SELECT Students_tmp.student_id,
-                            Students_tmp.leader
-                        FROM Students_tmp
-                    );""")
+                    AND Students.leader <> Students_tmp.leader
+                WHERE Students_tmp.student_id IS NOT NULL;""")
             difference['leader_status'] = cursor.fetchall()
 
             cursor.execute("""
                 SELECT Students.student_id,
                     Students.student_group AS 'new_group',
                     Students_tmp.student_group AS 'last_group'
-                FROM Students -- убираем всех только-что зачисленных студентов
+                FROM Students
                     LEFT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
-                WHERE Students_tmp.student_id IS NOT NULL
-                    AND (Students.student_id, Students.student_group) NOT IN (
-                        SELECT Students_tmp.student_id,
-                            Students_tmp.student_group
-                        FROM Students_tmp
-                    );""")
+                    AND Students.student_group <> Students_tmp.student_group
+                WHERE Students_tmp.student_id IS NOT NULL""")
             difference['group_change'] = cursor.fetchall()
 
             print("difference объект создан")
