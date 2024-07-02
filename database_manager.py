@@ -23,7 +23,7 @@ class DatabaseManager(object):
             print(f"Успешное подключение к базе данных")
         except Exception as ex:
             print(f"Не удалось подключиться к базе данных: {ex}")
-            raise ex
+            # raise ex
 
     def close(self):
         self.connection.close()
@@ -31,10 +31,6 @@ class DatabaseManager(object):
     def prepare_tables(self):
         with self.connection.cursor() as cursor:
             try:
-                # начинаем транзакцию
-                self.connection.begin()
-                print("Открыта транзакция prepare_tables")
-
                 cursor.execute(f"""
                     CREATE TABLE IF NOT EXISTS StudentArchive (
                         record_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -67,8 +63,8 @@ class DatabaseManager(object):
                     CREATE TABLE IF NOT EXISTS StudentGroups (
                     group_id INT UNIQUE,
                     group_name VARCHAR(16) NOT NULL,
-                    institute INT,
-                    course INT,
+                    institute INT NOT NULL,
+                    course INT NOT NULL,
                     PRIMARY KEY (group_id),
                     FOREIGN KEY (institute) REFERENCES Institutes (institute_id) ON DELETE CASCADE,
                     FOREIGN KEY (course) REFERENCES Courses (course_id) ON DELETE CASCADE);""")
@@ -78,17 +74,17 @@ class DatabaseManager(object):
                     CREATE TABLE IF NOT EXISTS Students (
                     student_id INT UNIQUE,
                     student_name VARCHAR(255) NOT NULL,
-                    student_group INT,
+                    student_group INT NOT NULL,
                     leader BOOLEAN NOT NULL,
                     PRIMARY KEY (student_id),
                     FOREIGN KEY (student_group) REFERENCES StudentGroups (group_id) ON DELETE CASCADE);""")
                 print("Приведена таблица Students")
 
-                cursor.execute(f"""CREATE TABLE IF NOT EXISTS Institutes_tmp 
+                cursor.execute(f"""CREATE TABLE IF NOT EXISTS Institutes_tmp
                         SELECT * FROM Institutes;""")
                 print("Приведена таблица Institutes_tmp")
 
-                cursor.execute(f"""CREATE TABLE IF NOT EXISTS Courses_tmp 
+                cursor.execute(f"""CREATE TABLE IF NOT EXISTS Courses_tmp
                         SELECT * FROM Courses;""")
                 print("Приведена таблица Courses_tmp")
 
@@ -96,7 +92,7 @@ class DatabaseManager(object):
                         SELECT * FROM StudentGroups;""")
                 print("Приведена таблица StudentGroups_tmp")
 
-                cursor.execute(f"""CREATE TABLE IF NOT EXISTS Students_tmp 
+                cursor.execute(f"""CREATE TABLE IF NOT EXISTS Students_tmp
                         SELECT * FROM Students;""")
                 print("Приведена таблица Students_tmp")
 
@@ -108,11 +104,32 @@ class DatabaseManager(object):
 
                 # отправляем изменения, так как ошибок не возникло
                 self.connection.commit()
-                print("Транзакция prepare_tables прошла успешно")
+                print("Подготовка таблиц прошла успешно")
             except Exception as ex:
-                self.connection.rollback()
-                print(f"Не удалось завершить транзакцию prepare_tables: {ex}")
-                raise ex
+                print(f"Не удалось завершить подготовку таблиц: {ex}")
+                return "exception"
+                # raise ex
+
+    def rollback_tables(self):
+        with self.connection.cursor() as cursor:
+            cursor.execute("DROP TABLE IF EXISTS Institutes, Courses, StudentGroups, Students;")
+            print("Основные таблицы удалены")
+
+            cursor.execute(f"""CREATE TABLE IF NOT EXISTS Institutes
+                                    SELECT * FROM Institutes_tmp;""")
+            print("Откат таблицы Institutes")
+
+            cursor.execute(f"""CREATE TABLE IF NOT EXISTS Courses
+                                    SELECT * FROM Courses_tmp;""")
+            print("Откат таблицы Courses")
+
+            cursor.execute(f"""CREATE TABLE IF NOT EXISTS StudentGroups
+                                    SELECT * FROM StudentGroups_tmp;""")
+            print("Откат таблицы StudentGroups")
+
+            cursor.execute(f"""CREATE TABLE IF NOT EXISTS Students
+                                    SELECT * FROM Students_tmp;""")
+            print("Откат таблицы Students")
 
     def get_total_students(self):
         with self.connection.cursor() as cursor:
@@ -245,5 +262,6 @@ class DatabaseManager(object):
                                 student['student_id']))
                 self.connection.commit()
             print("Отчисленные студенты загружены в архив")
-    def close(self):
+
+    def connection_close(self):
         self.connection.close()

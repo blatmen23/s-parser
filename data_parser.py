@@ -2,6 +2,7 @@ import datetime
 import requests
 from bs4 import BeautifulSoup
 
+
 class DataParser(object):
     courses = None
     groups = None
@@ -18,40 +19,52 @@ class DataParser(object):
 
     def parse_data(self):
         print(f"{datetime.datetime.now().time()} > Начало парсинга")
-        # перебираем институты
-        for institute in list(self.institutes.keys()):
-            url = f"https://old.kai.ru/info/students/brs.php?p_fac={self.institutes[institute][0]}"
-            page = requests.get(url)
-            soup = BeautifulSoup(page.content, 'lxml')
-            # достаём курсы этого института
-            tags = soup.find("select", {"name": "p_kurs"}).find_all("option")
-            self.courses = [(tag["value"], tag.text) for tag in tags]
-
-            # перебираем все курсы института
-            for course in self.courses:
-                url = f"https://old.kai.ru/info/students/brs.php?p_fac={self.institutes[institute][0]}&p_kurs={course[0]}"
+        try:
+            # перебираем институты
+            for institute in list(self.institutes.keys()):
+                url = f"https://old.kai.ru/info/students/brs.php?p_fac={self.institutes[institute][0]}"
                 page = requests.get(url)
                 soup = BeautifulSoup(page.content, 'lxml')
-                # достаём группы этого курса, этого института
-                tags = soup.find("select", {"name": "p_group"}).find_all("option")
-                self.groups = [(tag["value"], tag.text) for tag in tags]
-                # перебираем все группы, этого курса, этого института
-                for group in self.groups:
-                    url = f"https://old.kai.ru/info/students/brs.php?p_fac={self.institutes[institute][0]}&p_kurs={course[0]}&p_group={group[0]}"
+                # достаём курсы этого института
+                tags = soup.find("select", {"name": "p_kurs"}).find_all("option")
+                self.courses = [(tag["value"], tag.text) for tag in tags]
+
+                # перебираем все курсы института
+                for course in self.courses:
+                    url = f"https://old.kai.ru/info/students/brs.php?p_fac={self.institutes[institute][0]}&p_kurs={course[0]}"
                     page = requests.get(url)
                     soup = BeautifulSoup(page.content, 'lxml')
-                    # достаём студентов этой группы, этого курса, этого института
-                    tags = soup.find("select", {"name": "p_stud"}).find_all("option")
-                    self.students = [(tag["value"], tag.text) for tag in tags]
-                    for student in self.students:
-                        if student[0] == "" or student[1] == "":
-                            continue
-                        yield {'institute': self.institutes[institute],
-                               'institute_num': institute,
-                               'course': course,
-                               'group': group,
-                               'student': student,
-                               'leader': self.leader}
+                    # достаём группы этого курса, этого института
+                    tags = soup.find("select", {"name": "p_group"}).find_all("option")
+                    self.groups = [(tag["value"], tag.text) for tag in tags]
+                    # перебираем все группы, этого курса, этого института
+                    for group in self.groups:
+                        url = f"https://old.kai.ru/info/students/brs.php?p_fac={self.institutes[institute][0]}&p_kurs={course[0]}&p_group={group[0]}"
+                        page = requests.get(url)
+                        soup = BeautifulSoup(page.content, 'lxml')
+                        # достаём студентов этой группы, этого курса, этого института
+                        tags = soup.find("select", {"name": "p_stud"}).find_all("option")
+                        self.students = [(tag["value"], tag.text) for tag in tags]
+                        for student in self.students:
+                            if student[0] == "" or student[1] == "":
+                                continue
+                            yield {'institute': self.institutes[institute],
+                                   'institute_num': institute,
+                                   'course': course,
+                                   'group': group,
+                                   'student': student,
+                                   'leader': self.leader}
+        except requests.exceptions.ConnectTimeout:
+            print(f"{datetime.datetime.now().time()} > requests.exceptions.ConnectTimeout")
+            print(f"{datetime.datetime.now().time()} > конец парсинга.")
+            yield "exception"
+            # raise ex
+        except Exception as ex:
+            print(f"{datetime.datetime.now().time()} > {ex}")
+            print(f"{datetime.datetime.now().time()} > конец парсинга.")
+            yield "exception"
+            # raise ex
+
         print(f"{datetime.datetime.now().time()} > конец парсинга.")
 
     # def parse_elders(self):

@@ -1,7 +1,0 @@
-{"new_groups": [], "deleted_groups": [], "entered_students": [{"student_id": 122377, "student_name": "\u0427\u0436\u0430\u043e \u042f\u043d ", "student_group": 9139, "leader": 0}], "left_students": [
-  {
-    "leader": 0,
-    "student_group": 7651,
-    "student_id": 128524,
-    "student_name": "\u0414\u0451\u043c\u0438\u043d \u0410\u043b\u0435\u043a\u0441\u0430\u043d\u0434\u0440 \u0410\u043b\u0435\u043a\u0441\u0435\u0435\u0432\u0438\u0447"
-  }], "leader_status": [{"student_id": 100150, "status": "demotion", "student_group": 8153}, {"student_id": 108048, "status": "promotion", "student_group": 7645}], "group_change": [{"student_id": 100150, "new_group": 8153, "last_group": 7711}, {"student_id": 104038, "new_group": 7601, "last_group": 7714}, {"student_id": 107270, "new_group": 7600, "last_group": 7651}]}
