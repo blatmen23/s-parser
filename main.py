@@ -9,7 +9,8 @@ from config import *
 
 
 def exception_way():
-    tg_reporter.send_error_message("⚠️ Возникла непредвиденная ошибка, отчёта сегодня не будет 😔")
+    tg_reporter.send_error_message(TG_CHAT_ADMIN, "<b>⚠️ Возникла непредвиденная ошибка, отчёта сегодня не будет 😔</b>")
+    tg_reporter.send_error_message(TG_CHAT_CHANNEL, "<b>⚠️ Возникла непредвиденная ошибка, отчёта сегодня не будет 😔</b>")
     db_manager.rollback_tables()
     exit()
 
@@ -21,24 +22,23 @@ db_manager = DatabaseManager(host=MYSQL_HOST,
                              password=MYSQL_PASSWORD,
                              database=MYSQL_DB_NAME)
 analyzer = DataAnalyzer()
-tg_reporter = TelegramReporter(tg_token=TG_TOKEN,
-                               chat_id=TG_CHAT)
+tg_reporter = TelegramReporter(tg_token=TG_TOKEN)
 
 db_manager.connect()
-prepare_tables_result = db_manager.prepare_tables()
-
-if prepare_tables_result == 'exception':
-    exception_way()
-
+# prepare_tables_result = db_manager.prepare_tables()
+#
+# if prepare_tables_result == 'exception':
+#     exception_way()
+#
 start_time = int(time.time())
-data = parser.parse_data()  # генератор
-for chunk_data in data:
-    if chunk_data == 'exception':
-        exception_way()
-    db_manager.save_data(chunk_data)
-
+# data = parser.parse_data()  # генератор
+# for chunk_data in data:
+#     if chunk_data == 'exception':
+#         exception_way()
+#     db_manager.save_data(chunk_data)
+#
 end_time = int(time.time())
-
+#
 table_differences = db_manager.get_different_tables()
 db_manager.archive_data(table_differences['left_students'])
 
@@ -49,7 +49,15 @@ differences_file_path, report_file_path = analyzer.get_report(differences=table_
                                                               total_groups=db_manager.get_total_groups(),
                                                               )
 
-tg_reporter.send_document(report_file_path, "Отчет в .txt формате")
-tg_reporter.send_document(differences_file_path, "Отчет в .json формате")
+tg_reporter.send_document(TG_CHAT_ADMIN, report_file_path, "Отчет в .txt формате")
+tg_reporter.send_document(TG_CHAT_ADMIN, differences_file_path, "Отчет в .json формате")
+
+tg_reporter.send_document(TG_CHAT_CHANNEL, report_file_path, """
+<b>🔄 База студентов была обновлена.</b>
+
+📎 Отчёт в прикреплённом файле
+
+<i>📌 Инструкция <a href="https://t.me/c/2191201472/8">«как понимать отчёт»</a></i>""")
+
 
 db_manager.connection_close()

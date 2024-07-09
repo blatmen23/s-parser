@@ -2,15 +2,16 @@ import requests
 
 
 class TelegramReporter(object):
-    def __init__(self, tg_token, chat_id):
+    def __init__(self, tg_token):
         self.tg_token = tg_token
-        self.chat_id = chat_id
 
-    def send_document(self, file_path, caption):
+    def send_document(self, chat_id, file_path, caption):
         try:
             file = {'document': open(file_path, 'rb')}
-            data = {'chat_id': self.chat_id,
-                    'caption': caption}
+            data = {'chat_id': chat_id,
+                    'caption': caption,
+                    'parse_mode': 'html',
+                    'disable_notification': True}
             url = f'https://api.telegram.org/bot{self.tg_token}/sendDocument'
             response = requests.post(url, files=file, data=data)
             if response:
@@ -18,10 +19,12 @@ class TelegramReporter(object):
         except Exception as ex:
             print(f"Не удалось отправить {file_path}: {ex}")
 
-    def send_error_message(self, text):
+    def send_error_message(self, chat_id, text):
         try:
-            data = {'chat_id': self.chat_id,
-                    'text': text}
+            data = {'chat_id': chat_id,
+                    'text': text,
+                    'parse_mode': 'html',
+                    'disable_notification': True}
             url = f'https://api.telegram.org/bot{self.tg_token}/sendMessage'
             response = requests.post(url, data)
             if response:
