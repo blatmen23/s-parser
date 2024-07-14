@@ -1,6 +1,5 @@
 import pymysql.cursors
 
-
 class DatabaseManager(object):
     connection = None
 
@@ -28,6 +27,11 @@ class DatabaseManager(object):
     def close(self):
         self.connection.close()
 
+    def prepare_database(self):
+        with self.connection.cursor() as cursor:
+            cursor.execute("SET SQL_BIG_SELECTS=1;")
+            print("Подготовка базы данных завершена")
+
     def prepare_tables(self):
         with self.connection.cursor() as cursor:
             try:
@@ -43,7 +47,7 @@ class DatabaseManager(object):
                     );""")
                 print("Приведена таблица StudentArchive")
 
-                cursor.execute("DROP TABLE IF EXISTS Institutes_tmp, Courses_tmp, StudentGroups_tmp, Students_tmp;")
+                cursor.execute("DROP TABLE IF EXISTS Students_tmp, StudentGroups_tmp, Institutes_tmp, Courses_tmp;")
                 print("tmp таблицы очищены")
 
                 cursor.execute(f"""
@@ -111,8 +115,8 @@ class DatabaseManager(object):
                 # raise ex
 
     def rollback_tables(self):
-        with self.connection.cursor() as cursor:
-            cursor.execute("DROP TABLE IF EXISTS Institutes, Courses, StudentGroups, Students;")
+        with self.connection.cursor() as cursor:  # удаляем по порядку, согласно схеме
+            cursor.execute("DROP TABLE IF EXISTS Students, StudentGroups, Institutes, Courses;")
             print("Основные таблицы удалены")
 
             cursor.execute(f"""CREATE TABLE IF NOT EXISTS Institutes

@@ -12,6 +12,7 @@ def exception_way():
     tg_reporter.send_error_message(TG_CHAT_ADMIN, "<b>⚠️ Возникла непредвиденная ошибка, отчёта сегодня не будет 😔</b>")
     tg_reporter.send_error_message(TG_CHAT_CHANNEL, "<b>⚠️ Возникла непредвиденная ошибка, отчёта сегодня не будет 😔</b>")
     db_manager.rollback_tables()
+    db_manager.connection_close()
     exit()
 
 
@@ -25,20 +26,21 @@ analyzer = DataAnalyzer()
 tg_reporter = TelegramReporter(tg_token=TG_TOKEN)
 
 db_manager.connect()
-# prepare_tables_result = db_manager.prepare_tables()
-#
-# if prepare_tables_result == 'exception':
-#     exception_way()
-#
+db_manager.prepare_database()
+prepare_tables_result = db_manager.prepare_tables()
+
+if prepare_tables_result == 'exception':
+    exception_way()
+
 start_time = int(time.time())
-# data = parser.parse_data()  # генератор
-# for chunk_data in data:
-#     if chunk_data == 'exception':
-#         exception_way()
-#     db_manager.save_data(chunk_data)
-#
+data = parser.parse_data()  # генератор
+for chunk_data in data:
+    if chunk_data == 'exception':
+        exception_way()
+    db_manager.save_data(chunk_data)
+
 end_time = int(time.time())
-#
+
 table_differences = db_manager.get_different_tables()
 db_manager.archive_data(table_differences['left_students'])
 

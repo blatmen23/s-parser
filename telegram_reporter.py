@@ -13,7 +13,7 @@ class TelegramReporter(object):
                     'parse_mode': 'html',
                     'disable_notification': True}
             url = f'https://api.telegram.org/bot{self.tg_token}/sendDocument'
-            response = requests.post(url, files=file, data=data)
+            response = requests.post(url, files=file, data=data, timeout=10)
             if response:
                 print(f"{file_path} отправлен в телеграм")
         except Exception as ex:
@@ -26,7 +26,7 @@ class TelegramReporter(object):
                     'parse_mode': 'html',
                     'disable_notification': True}
             url = f'https://api.telegram.org/bot{self.tg_token}/sendMessage'
-            response = requests.post(url, data)
+            response = requests.post(url, data, timeout=10)
             if response:
                 print(f"Сообщение об ошибке отправлено в телеграм")
         except Exception as ex:
