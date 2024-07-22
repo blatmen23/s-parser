@@ -1,4 +1,4 @@
-from data_parser import DataParser
+from data_parser import StudentsParser, LeadersParser
 from database_manager import DatabaseManager
 from data_analyzer import DataAnalyzer
 from telegram_reporter import TelegramReporter
@@ -16,7 +16,8 @@ def exception_way():
     exit()
 
 
-parser = DataParser()
+student_parser = StudentsParser()
+
 db_manager = DatabaseManager(host=MYSQL_HOST,
                              port=MYSQL_PORT,
                              user=MYSQL_USERNAME,
@@ -33,12 +34,25 @@ if prepare_tables_result == 'exception':
     exception_way()
 
 start_time = int(time.time())
-data = parser.parse_data()  # генератор
-for chunk_data in data:
+
+student_data = student_parser.parse_data()  # генератор
+for chunk_data in student_data:
     if chunk_data == 'exception':
         exception_way()
     db_manager.save_data(chunk_data)
 
+groups = db_manager.get_all_groups_name()
+leaders_parser = LeadersParser(groups)
+
+leaders_data = leaders_parser.parse_leaders()  # генератор
+for chunk_data in leaders_data:
+    if chunk_data == 'exception':
+        exception_way()
+    try:
+        db_manager.update_leaders_status(chunk_data)
+    except Exception as ex:
+        print(f"Не удалось обновить статус лидера в {chunk_data}")
+        raise ex
 end_time = int(time.time())
 
 table_differences = db_manager.get_different_tables()

@@ -1,5 +1,6 @@
 import pymysql.cursors
 
+
 class DatabaseManager(object):
     connection = None
 
@@ -22,6 +23,7 @@ class DatabaseManager(object):
             print(f"Успешное подключение к базе данных")
         except Exception as ex:
             print(f"Не удалось подключиться к базе данных: {ex}")
+            exit()
             # raise ex
 
     def close(self):
@@ -135,6 +137,11 @@ class DatabaseManager(object):
                                     SELECT * FROM Students_tmp;""")
             print("Откат таблицы Students")
 
+    def get_all_groups_name(self):
+        with self.connection.cursor() as cursor:
+            cursor.execute("SELECT group_name FROM StudentGroups;")
+            return [group['group_name'] for group in cursor.fetchall()]
+
     def get_total_students(self):
         with self.connection.cursor() as cursor:
             cursor.execute("""SELECT COUNT(student_id) as count FROM Students""")
@@ -235,6 +242,16 @@ class DatabaseManager(object):
                     (chunk_data['student'][0], chunk_data['student'][1], chunk_data['group'][0], chunk_data['leader']))
 
             # print(chunk_data)
+            self.connection.commit()
+
+    def update_leaders_status(self, chunk_data):
+        with self.connection.cursor() as cursor:
+            cursor.execute(f"""
+UPDATE Students
+	JOIN StudentGroups ON Students.student_group = StudentGroups.group_id
+SET leader = 1
+WHERE StudentGroups.group_name = %s
+	AND Students.student_name = %s;""", (chunk_data['group_name'], chunk_data['student_name']))
             self.connection.commit()
 
     def _get_name_attributes(self, student_id):

@@ -3,7 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 
 
-class DataParser(object):
+class StudentsParser(object):
     courses = None
     groups = None
     students = None
@@ -18,7 +18,7 @@ class DataParser(object):
     }
 
     def parse_data(self):
-        print(f"{datetime.datetime.now().time()} > Начало парсинга")
+        print(f"{datetime.datetime.now().time()} > Начало парсинга студентов")
         try:
             # перебираем институты
             for institute in list(self.institutes.keys()):
@@ -56,29 +56,73 @@ class DataParser(object):
                                    'leader': self.leader}
         except requests.exceptions.ConnectTimeout:
             print(f"{datetime.datetime.now().time()} > requests.exceptions.ConnectTimeout")
-            print(f"{datetime.datetime.now().time()} > конец парсинга.")
+            print(f"{datetime.datetime.now().time()} > конец парсинга студентов.")
             yield "exception"
             # raise ex
         except Exception as ex:
             print(f"{datetime.datetime.now().time()} > {ex}")
-            print(f"{datetime.datetime.now().time()} > конец парсинга.")
+            print(f"{datetime.datetime.now().time()} > конец парсинга студентов.")
             yield "exception"
             # raise ex
 
-        print(f"{datetime.datetime.now().time()} > конец парсинга.")
+        print(f"{datetime.datetime.now().time()} > конец парсинга студентов.")
 
-    # def parse_elders(self):
-    #     for id in range(0, 30000):
-    #         url = f"https://kai.ru/infoClick/-/info/group?id={id}"
-    #         page = requests.get(url, timeout=10)
-    #         soup = BeautifulSoup(page.content, 'lxml')
-    #         if soup.find("div", {"class": "alert-info"}):
-    #             print(str(id) + " alert-info")
-    #             continue
-    #
-    #         students_row = soup.find("tbody").find_all("tr")
-    #         for student_row in students_row:
-    #             student_columns = student_row.find_all("td")
-    #             student_name_column = student_columns[1]
-    #             if student_name_column.find("span"):
-    #                 print(id, " ".join(student_name_column.text.split()[:-1:]))
+
+class LeadersParser(object):
+
+    def __init__(self, groups):
+        self.groups = groups
+
+    def _get_groups_data(self):
+        groups_data = list()
+        for digit in range(1, 11):
+            url = f'https://kai.ru/raspisanie?p_p_id=pubStudentSchedule_WAR_publicStudentSchedule10&p_p_lifecycle=2&p_p_state=normal&p_p_mode=view&p_p_resource_id=getGroupsURL&p_p_cacheability=cacheLevelPage&p_p_col_id=column-1&p_p_col_count=1&query={digit}'
+            groups_data = groups_data + requests.get(url, timeout=10).json()
+        return groups_data
+
+    def _get_leader_from_group(self, groups_data):
+        leaders_data = list()
+        for group_data in groups_data:
+            if group_data['group'] not in self.groups:
+                continue
+            url = f"https://kai.ru/infoClick/-/info/group?id={group_data['id']}&name={group_data['group']}"
+            page = requests.get(url, timeout=10)
+            soup = BeautifulSoup(page.content, 'lxml')
+            try:
+                # Получаем строку с элементом, содержащим старосту
+                row_with_leader = soup.select_one("tbody tr td:has(span.label-info)")
+
+                # Если найдена строка, выводим ее
+                if row_with_leader:
+                    leader_name_td = soup.find('span', class_='label label-info').find_parent('td')
+                    student_order = leader_name_td.find_parent('tr').find('td').text
+                    student_name = leader_name_td.contents[0].strip()
+                    leaders_data.append({
+                        "student_name": student_name,
+                        "group_name": group_data['group'],
+                    })
+                    print(f"{student_order} {student_name} в {group_data['group']} ~ {group_data['id']}")
+            except:
+                print(f"Не удалось получить старосту в {group_data['group']} ~ {group_data['id']}")
+        return leaders_data
+
+    def parse_leaders(self):
+        print(f"{datetime.datetime.now().time()} > Начало парсинга старост")
+        try:
+            groups_dict = self._get_groups_data()
+            leaders = self._get_leader_from_group(groups_data=groups_dict)
+
+            for leader in leaders:
+                yield leader
+        except requests.exceptions.ConnectTimeout:
+            print(f"{datetime.datetime.now().time()} > requests.exceptions.ConnectTimeout")
+            print(f"{datetime.datetime.now().time()} > конец парсинга старост.")
+            yield "exception"
+            # raise ex
+        except Exception as ex:
+            print(f"{datetime.datetime.now().time()} > {ex}")
+            print(f"{datetime.datetime.now().time()} > конец парсинга старост.")
+            yield "exception"
+            # raise ex
+
+        print(f"{datetime.datetime.now().time()} > конец парсинга старост.")
