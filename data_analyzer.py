@@ -28,14 +28,14 @@ class DataAnalyzer(object):
         return f"{hours}:{minutes}:{seconds}"
 
     def get_report(self, differences: dict, start_time: int, end_time: int, total_students: int, total_groups: int):
-        all_new_groups = "\n".join([str(group["group_id"]) + " - " + str(group["group_name"]) for group in differences["new_groups"]])
-        all_deleted_groups = "\n".join([str(group["group_id"]) + " - " + str(group["group_name"]) for group in differences["deleted_groups"]])
+        all_new_groups = "\n".join([str(group["group_name"]) for group in differences["new_groups"]])
+        all_deleted_groups = "\n".join([str(group["group_name"]) for group in differences["deleted_groups"]])
 
-        all_entered_students = "\n".join([str(student["student_id"]) + " - " + str(student["student_name"]) for student in differences["entered_students"]])
-        all_left_students = "\n".join([str(student["student_id"]) + " - " + str(student["student_name"]) for student in differences["left_students"]])
+        all_entered_students = "\n".join([str(student["student_name"]) + " - " + str(student["group_name"]) for student in differences["entered_students"]])
+        all_left_students = "\n".join([str(student["student_name"]) + " - " + str(student["group_name"]) for student in differences["left_students"]])
 
-        all_leaders_status_changes = "\n".join([str(student["student_id"]) + " - " + str(student["student_name"] + " - " + str(student["status"])) for student in differences["leader_status"]])
-        all_group_changes = "\n".join([str(student["student_id"]) + " - " + str(student["student_name"] + " - " + str(student["last_group_name"])) + " -> " + str(student["new_group_name"]) for student in differences["group_change"]])
+        all_leaders_status_changes = "\n".join([str(student["student_name"]  + " - " + str(student["group_name"]) + " - " + ("повышение" if str(student["status"]) == "promotion" else ("понижение" if str(student["status"]) == "demotion" else ""))) for student in differences["leader_status"]])
+        all_group_changes = "\n".join([str(student["student_name"] + " - " + str(student["last_group_name"])) + " -> " + str(student["new_group_name"]) for student in differences["group_change"]])
 
         report_content = (f'База студентов обновлена: {date.today()}\n'
                           f'Затраченное время: {self._get_time_difference(start_time, end_time)}\n'

@@ -169,14 +169,26 @@ class DatabaseManager(object):
             difference['deleted_groups'] = cursor.fetchall()
 
             cursor.execute("""-- entered students
-                SELECT Students.* FROM Students LEFT JOIN Students_tmp 
-                  ON Students.student_id = Students_tmp.student_id
+                SELECT Students.student_id,
+                    Students.student_name,
+                    Students.student_group AS 'group_id',
+                    StudentGroups.group_name AS 'group_name',
+                    Students.leader
+                FROM Students
+                    LEFT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
+                    JOIN StudentGroups ON Students.student_group = StudentGroups.group_id
                 WHERE Students_tmp.student_id IS NULL;""")
             difference['entered_students'] = cursor.fetchall()
 
             cursor.execute("""-- left students
-                SELECT Students_tmp.* FROM Students RIGHT JOIN Students_tmp 
-                    ON Students.student_id = Students_tmp.student_id
+                SELECT Students_tmp.student_id,
+                    Students_tmp.student_name,
+                    Students_tmp.student_group AS 'group_id',
+                    StudentGroups_tmp.group_name AS 'group_name',
+                    Students_tmp.leader
+                FROM Students
+                    RIGHT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
+                    JOIN StudentGroups_tmp ON Students_tmp.student_group = StudentGroups_tmp.group_id
                 WHERE Students.student_id IS NULL;""")
             difference['left_students'] = cursor.fetchall()
 
@@ -187,10 +199,12 @@ class DatabaseManager(object):
                         WHEN Students.leader <> 0 THEN "promotion"
                         WHEN Students.leader = 0 THEN "demotion"
                     END AS status,
-                    Students.student_group
+                    Students.student_group AS 'group_id',
+                    StudentGroups.group_name AS 'group_name'
                 FROM Students -- убираем всех только-что зачисленных студентов
                     LEFT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
                     AND Students.leader <> Students_tmp.leader
+                    JOIN StudentGroups ON Students.student_group = StudentGroups.group_id
                 WHERE Students_tmp.student_id IS NOT NULL;""")
             difference['leader_status'] = cursor.fetchall()
 
