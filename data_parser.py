@@ -101,7 +101,7 @@ class LeadersParser(object):
                         "student_name": student_name,
                         "group_name": group_data['group'],
                     })
-                    print(f"{student_order} {student_name} в {group_data['group']} ~ {group_data['id']}")
+                    # print(f"{student_order} {student_name} в {group_data['group']} ~ {group_data['id']}")
             except:
                 print(f"Не удалось получить старосту в {group_data['group']} ~ {group_data['id']}")
         return leaders_data
