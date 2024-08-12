@@ -38,6 +38,15 @@ class DatabaseManager(object):
         with self.connection.cursor() as cursor:
             try:
                 cursor.execute(f"""
+                    CREATE TABLE IF NOT EXISTS ReportArchive (
+                        report_id INT AUTO_INCREMENT PRIMARY KEY,
+                        report_content TEXT NOT NULL,
+                        report_json JSON NOT NULL,
+                        report_date DATE NOT NULL
+                    );""")
+                print("Приведена таблица ReportArchive")
+
+                cursor.execute(f"""
                     CREATE TABLE IF NOT EXISTS StudentArchive (
                         record_id INT AUTO_INCREMENT PRIMARY KEY,
                         institute_name VARCHAR(255) NOT NULL,
@@ -45,7 +54,7 @@ class DatabaseManager(object):
                         group_name VARCHAR(16) NOT NULL,
                         student_name VARCHAR(255) NOT NULL,
                         student_id INT NOT NULL,
-                        record_time DATETIME NOT NULL DEFAULT NOW()
+                        record_date DATE NOT NULL
                     );""")
                 print("Приведена таблица StudentArchive")
 
@@ -221,7 +230,7 @@ class DatabaseManager(object):
                     JOIN StudentGroups ON Students.student_group = StudentGroups.group_id
                     JOIN StudentGroups_tmp ON Students_tmp.student_group = StudentGroups_tmp.group_id
                 WHERE Students_tmp.student_id IS NOT NULL""")
-            difference['group_change'] = cursor.fetchall()
+            difference['group_changes'] = cursor.fetchall()
 
             print("difference объект создан")
             return difference
@@ -284,12 +293,26 @@ WHERE StudentGroups.group_name = %s
             name_attributes = cursor.fetchone()
             return name_attributes
 
+    def archive_report(self, report_txt_file_path, report_json_file_path):
+        with open(report_txt_file_path, "r", encoding='utf-8') as f:
+            report_txt = f.read()
+
+        with open(report_json_file_path, "r", encoding='utf-8') as f:
+            report_json = f.read()
+
+        with self.connection.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO ReportArchive (report_content, report_json, report_date) VALUES (%s, %s, CURRENT_DATE());",
+                (report_txt, report_json))
+            self.connection.commit()
+            print("Отчёт загружен в архив")
+
     def archive_data(self, left_students):
         with self.connection.cursor() as cursor:
             for student in left_students:
                 name_attributes = self._get_name_attributes(student['student_id'])
-                cursor.execute("""INSERT INTO StudentArchive (institute_name, course_name, group_name, student_name, student_id)
-                    VALUES(%s, %s, %s, %s, %s);""",
+                cursor.execute("""INSERT INTO StudentArchive (institute_name, course_name, group_name, student_name, student_id, record_date)
+                    VALUES(%s, %s, %s, %s, %s, CURRENT_DATE());""",
                                (name_attributes['institute_name'],
                                 name_attributes['course_name'],
                                 name_attributes['group_name'],

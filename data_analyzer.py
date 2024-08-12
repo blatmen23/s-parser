@@ -4,17 +4,17 @@ from datetime import date
 
 class DataAnalyzer(object):
 
-    def _save_differences(self, difference: dict):
-        file_name = f"table_differences_{date.today()}.json"
-        file_path = f"differences files/{file_name}"
+    def _save_report_json(self, difference: dict):
+        file_name = f"report_{date.today()}.json"
+        file_path = f"reports/json/{file_name}"
         with open(file_path, "w", encoding="utf-8") as file:
             json.dump(difference, file, ensure_ascii=False)
         print(f"difference объект сохранён как {file_name}")
         return file_path
 
-    def _save_report(self, report: str):
+    def _save_report_txt(self, report: str):
         file_name = f"report_{date.today()}.txt"
-        file_path = f"reports/{file_name}"
+        file_path = f"reports/txt/{file_name}"
         with open(file_path, "w", encoding="utf-8") as file:
             file.write(report)
         print(f"report объект сохранён как {file_name}")
@@ -27,7 +27,7 @@ class DataAnalyzer(object):
         seconds = str(time_difference % 60).zfill(2)
         return f"{hours}:{minutes}:{seconds}"
 
-    def get_report(self, differences: dict, start_time: int, end_time: int, total_students: int, total_groups: int):
+    def get_report_txt(self, differences: dict, start_time: int, end_time: int, total_students: int, total_groups: int):
         all_new_groups = "\n".join([str(group["group_name"]) for group in differences["new_groups"]])
         all_deleted_groups = "\n".join([str(group["group_name"]) for group in differences["deleted_groups"]])
 
@@ -35,7 +35,7 @@ class DataAnalyzer(object):
         all_left_students = "\n".join([str(student["student_name"]) + " - " + str(student["group_name"]) for student in differences["left_students"]])
 
         all_leaders_status_changes = "\n".join([str(student["student_name"] + " - " + str(student["group_name"]) + " - " + ("повышение" if str(student["status"]) == "promotion" else ("понижение" if str(student["status"]) == "demotion" else ""))) for student in differences["leader_status"]])
-        all_group_changes = "\n".join([str(student["student_name"] + " - " + str(student["last_group_name"])) + " -> " + str(student["new_group_name"]) for student in differences["group_change"]])
+        all_group_changes = "\n".join([str(student["student_name"] + " - " + str(student["last_group_name"])) + " -> " + str(student["new_group_name"]) for student in differences["group_changes"]])
 
         report_content = (f'База студентов обновлена: {date.today()}\n'
                           f'Затраченное время: {self._get_time_difference(start_time, end_time)}\n'
@@ -51,9 +51,26 @@ class DataAnalyzer(object):
                           f'{all_left_students}\n\n'
                           f'Изменения статусов старост: {len(differences["leader_status"])}\n'
                           f'{all_leaders_status_changes}\n\n'
-                          f'Студенты изменившие группу: {len(differences["group_change"])}\n'
+                          f'Студенты изменившие группу: {len(differences["group_changes"])}\n'
                           f'{all_group_changes}\n\n')
 
-        differences_file_path = self._save_differences(differences)
-        report_file_path = self._save_report(report_content)
-        return differences_file_path, report_file_path
+        # differences_file_path = self._save_report_json(differences)
+        report_txt_file_path = self._save_report_txt(report_content)
+        return report_txt_file_path
+
+    def get_report_json(self, differences: dict, start_time: int, end_time: int, total_students: int, total_groups: int):
+        report_content = dict(differences)
+        report_content["today"] = str(date.today())
+        report_content["time_difference"] = self._get_time_difference(start_time, end_time)
+        report_content["total_groups"] = total_groups
+        report_content["total_new_groups"] = len(differences["new_groups"])
+        report_content["total_deleted_groups"] = len(differences["deleted_groups"])
+        report_content["total_students"] = total_students
+        report_content["total_new_students"] = len(differences["entered_students"])
+        report_content["total_deleted_students"] = len(differences["left_students"])
+        report_content["total_leader_status"] = len(differences["leader_status"])
+        report_content["total_group_changes"] = len(differences["group_changes"])
+
+        report_txt_file_path = self._save_report_json(report_content)
+        return report_txt_file_path
+
