@@ -31,8 +31,12 @@ class DatabaseManager(object):
 
     def prepare_database(self):
         with self.connection.cursor() as cursor:
-            cursor.execute("SET SQL_BIG_SELECTS=1;")
+            cursor.execute("SET SQL_BIG_SELECTS = 'ON';")
+            cursor.execute("SET MAX_JOIN_SIZE = 18446744073709551615;")
+            # cursor.execute("SET SQL_BIG_SELECTS = 'OFF';")
+            # cursor.execute("SET MAX_JOIN_SIZE = 18446744;")
             print("Подготовка базы данных завершена")
+            pass
 
     def prepare_tables(self):
         with self.connection.cursor() as cursor:
@@ -40,7 +44,7 @@ class DatabaseManager(object):
                 cursor.execute(f"""
                     CREATE TABLE IF NOT EXISTS ReportArchive (
                         report_id INT AUTO_INCREMENT PRIMARY KEY,
-                        report_content TEXT NOT NULL,
+                        report_content MEDIUMTEXT NOT NULL,
                         report_json JSON NOT NULL,
                         report_date DATE NOT NULL
                     );""")
@@ -161,21 +165,37 @@ class DatabaseManager(object):
             cursor.execute("""SELECT COUNT(group_id) as count FROM StudentGroups""")
             return cursor.fetchone()['count']
 
+    def _save_partial_result(self, cursor):
+        result = []
+        while True:
+            partial_result = cursor.fetchmany(100)  # Определите удобный для вас размер пакета
+
+            if not partial_result:
+                break
+
+            result.extend(partial_result)
+        return result
+
     def get_different_tables(self):
         with self.connection.cursor() as cursor:
+            # cursor.execute("SHOW VARIABLES;")
+            # print(cursor.fetchall())
+
             difference = {}
 
             cursor.execute("""-- new groups
-                SELECT StudentGroups.* FROM StudentGroups LEFT JOIN StudentGroups_tmp 
+                SELECT StudentGroups.* FROM StudentGroups LEFT JOIN StudentGroups_tmp
                     ON StudentGroups.group_id = StudentGroups_tmp.group_id
                 WHERE StudentGroups_tmp.group_id IS NULL;""")
-            difference['new_groups'] = cursor.fetchall()
+            difference['new_groups'] = self._save_partial_result(cursor)
+            print("-- new groups")
 
             cursor.execute("""-- deleted groups
-                SELECT StudentGroups_tmp.* FROM StudentGroups RIGHT JOIN StudentGroups_tmp 
+                SELECT StudentGroups_tmp.* FROM StudentGroups RIGHT JOIN StudentGroups_tmp
                     ON StudentGroups.group_id = StudentGroups_tmp.group_id
                 WHERE StudentGroups.group_id IS NULL;""")
-            difference['deleted_groups'] = cursor.fetchall()
+            difference['deleted_groups'] = self._save_partial_result(cursor)
+            print("-- deleted groups")
 
             cursor.execute("""-- entered students
                 SELECT Students.student_id,
@@ -187,7 +207,8 @@ class DatabaseManager(object):
                     LEFT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
                     JOIN StudentGroups ON Students.student_group = StudentGroups.group_id
                 WHERE Students_tmp.student_id IS NULL;""")
-            difference['entered_students'] = cursor.fetchall()
+            difference['entered_students'] = self._save_partial_result(cursor)
+            print("-- entered students")
 
             cursor.execute("""-- left students
                 SELECT Students_tmp.student_id,
@@ -199,9 +220,10 @@ class DatabaseManager(object):
                     RIGHT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
                     JOIN StudentGroups_tmp ON Students_tmp.student_group = StudentGroups_tmp.group_id
                 WHERE Students.student_id IS NULL;""")
-            difference['left_students'] = cursor.fetchall()
+            difference['left_students'] = self._save_partial_result(cursor)
+            print("-- left students")
 
-            cursor.execute("""
+            cursor.execute("""-- leader status
                 SELECT Students.student_id,
                     Students.student_name,
                     CASE
@@ -215,9 +237,10 @@ class DatabaseManager(object):
                     AND Students.leader <> Students_tmp.leader
                     JOIN StudentGroups ON Students.student_group = StudentGroups.group_id
                 WHERE Students_tmp.student_id IS NOT NULL;""")
-            difference['leader_status'] = cursor.fetchall()
+            difference['leader_status'] = self._save_partial_result(cursor)
+            print("-- leader status")
 
-            cursor.execute("""
+            cursor.execute("""-- group changes
                 SELECT Students.student_id,
                     Students.student_name,
                     Students.student_group AS 'new_group_id',
@@ -230,7 +253,8 @@ class DatabaseManager(object):
                     JOIN StudentGroups ON Students.student_group = StudentGroups.group_id
                     JOIN StudentGroups_tmp ON Students_tmp.student_group = StudentGroups_tmp.group_id
                 WHERE Students_tmp.student_id IS NOT NULL""")
-            difference['group_changes'] = cursor.fetchall()
+            difference['group_changes'] = self._save_partial_result(cursor)
+            print("-- group changes")
 
             print("difference объект создан")
             return difference
