@@ -18,13 +18,16 @@ def exception_way():
 
 
 student_parser = StudentsParser()
-
 db_manager = DatabaseManager(host=MYSQL_HOST,
                              port=MYSQL_PORT,
                              user=MYSQL_USERNAME,
                              password=MYSQL_PASSWORD,
                              database=MYSQL_DB_NAME)
-analyzer = DataAnalyzer()
+analyzer = DataAnalyzer(host=MYSQL_HOST,
+                        port=MYSQL_PORT,
+                        user=MYSQL_USERNAME,
+                        password=MYSQL_PASSWORD,
+                        database=MYSQL_DB_NAME)
 tg_reporter = TelegramReporter(tg_token=TG_TOKEN)
 
 db_manager.connect()
@@ -57,7 +60,9 @@ for chunk_data in leaders_data:
 
 end_time = int(time.time())
 
-table_differences = db_manager.get_different_tables()
+analyzer.create_engine()
+
+table_differences = analyzer.get_different_tables()
 db_manager.archive_data(table_differences['left_students'])
 
 report_txt_file_path = analyzer.get_report_txt(differences=table_differences,

@@ -92,7 +92,7 @@ class LeadersParser(object):
                 # Получаем строку с элементом, содержащим старосту
                 row_with_leader = soup.select_one("tbody tr td:has(span.label-info)")
 
-                # Если найдена строка, выводим ее
+                # Если найдена строка старосты
                 if row_with_leader:
                     leader_name_td = soup.find('span', class_='label label-info').find_parent('td')
                     student_order = leader_name_td.find_parent('tr').find('td').text

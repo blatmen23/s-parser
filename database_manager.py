@@ -165,99 +165,99 @@ class DatabaseManager(object):
             cursor.execute("""SELECT COUNT(group_id) as count FROM StudentGroups""")
             return cursor.fetchone()['count']
 
-    def _save_partial_result(self, cursor):
-        result = []
-        while True:
-            partial_result = cursor.fetchmany(100)  # Определите удобный для вас размер пакета
+    # def _save_partial_result(self, cursor):
+    #     result = []
+    #     while True:
+    #         partial_result = cursor.fetchmany(100)  # Определите удобный для вас размер пакета
+    #
+    #         if not partial_result:
+    #             break
+    #
+    #         result.extend(partial_result)
+    #     return result
 
-            if not partial_result:
-                break
-
-            result.extend(partial_result)
-        return result
-
-    def get_different_tables(self):
-        with self.connection.cursor() as cursor:
-            # cursor.execute("SHOW VARIABLES;")
-            # print(cursor.fetchall())
-
-            difference = {}
-
-            cursor.execute("""-- new groups
-                SELECT StudentGroups.* FROM StudentGroups LEFT JOIN StudentGroups_tmp
-                    ON StudentGroups.group_id = StudentGroups_tmp.group_id
-                WHERE StudentGroups_tmp.group_id IS NULL;""")
-            difference['new_groups'] = self._save_partial_result(cursor)
-            print("-- new groups")
-
-            cursor.execute("""-- deleted groups
-                SELECT StudentGroups_tmp.* FROM StudentGroups RIGHT JOIN StudentGroups_tmp
-                    ON StudentGroups.group_id = StudentGroups_tmp.group_id
-                WHERE StudentGroups.group_id IS NULL;""")
-            difference['deleted_groups'] = self._save_partial_result(cursor)
-            print("-- deleted groups")
-
-            cursor.execute("""-- entered students
-                SELECT Students.student_id,
-                    Students.student_name,
-                    Students.student_group AS 'group_id',
-                    StudentGroups.group_name AS 'group_name',
-                    Students.leader
-                FROM Students
-                    LEFT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
-                    JOIN StudentGroups ON Students.student_group = StudentGroups.group_id
-                WHERE Students_tmp.student_id IS NULL;""")
-            difference['entered_students'] = self._save_partial_result(cursor)
-            print("-- entered students")
-
-            cursor.execute("""-- left students
-                SELECT Students_tmp.student_id,
-                    Students_tmp.student_name,
-                    Students_tmp.student_group AS 'group_id',
-                    StudentGroups_tmp.group_name AS 'group_name',
-                    Students_tmp.leader
-                FROM Students
-                    RIGHT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
-                    JOIN StudentGroups_tmp ON Students_tmp.student_group = StudentGroups_tmp.group_id
-                WHERE Students.student_id IS NULL;""")
-            difference['left_students'] = self._save_partial_result(cursor)
-            print("-- left students")
-
-            cursor.execute("""-- leader status
-                SELECT Students.student_id,
-                    Students.student_name,
-                    CASE
-                        WHEN Students.leader <> 0 THEN "promotion"
-                        WHEN Students.leader = 0 THEN "demotion"
-                    END AS status,
-                    Students.student_group AS 'group_id',
-                    StudentGroups.group_name AS 'group_name'
-                FROM Students -- убираем всех только-что зачисленных студентов
-                    LEFT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
-                    AND Students.leader <> Students_tmp.leader
-                    JOIN StudentGroups ON Students.student_group = StudentGroups.group_id
-                WHERE Students_tmp.student_id IS NOT NULL;""")
-            difference['leader_status'] = self._save_partial_result(cursor)
-            print("-- leader status")
-
-            cursor.execute("""-- group changes
-                SELECT Students.student_id,
-                    Students.student_name,
-                    Students.student_group AS 'new_group_id',
-                    Students_tmp.student_group AS 'last_group_id',
-                    StudentGroups.group_name AS 'new_group_name',
-                    StudentGroups_tmp.group_name AS 'last_group_name'
-                FROM Students
-                    LEFT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
-                        AND Students.student_group <> Students_tmp.student_group
-                    JOIN StudentGroups ON Students.student_group = StudentGroups.group_id
-                    JOIN StudentGroups_tmp ON Students_tmp.student_group = StudentGroups_tmp.group_id
-                WHERE Students_tmp.student_id IS NOT NULL""")
-            difference['group_changes'] = self._save_partial_result(cursor)
-            print("-- group changes")
-
-            print("difference объект создан")
-            return difference
+    # def get_different_tables(self):
+    #     with self.connection.cursor() as cursor:
+    #         # cursor.execute("SHOW VARIABLES;")
+    #         # print(cursor.fetchall())
+    #
+    #         difference = {}
+    #
+    #         cursor.execute("""-- new groups
+    #             SELECT StudentGroups.* FROM StudentGroups LEFT JOIN StudentGroups_tmp
+    #                 ON StudentGroups.group_id = StudentGroups_tmp.group_id
+    #             WHERE StudentGroups_tmp.group_id IS NULL;""")
+    #         difference['new_groups'] = self._save_partial_result(cursor)
+    #         print("-- new groups")
+    #
+    #         cursor.execute("""-- deleted groups
+    #             SELECT StudentGroups_tmp.* FROM StudentGroups RIGHT JOIN StudentGroups_tmp
+    #                 ON StudentGroups.group_id = StudentGroups_tmp.group_id
+    #             WHERE StudentGroups.group_id IS NULL;""")
+    #         difference['deleted_groups'] = self._save_partial_result(cursor)
+    #         print("-- deleted groups")
+    #
+    #         cursor.execute("""-- entered students
+    #             SELECT Students.student_id,
+    #                 Students.student_name,
+    #                 Students.student_group AS 'group_id',
+    #                 StudentGroups.group_name AS 'group_name',
+    #                 Students.leader
+    #             FROM Students
+    #                 LEFT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
+    #                 JOIN StudentGroups ON Students.student_group = StudentGroups.group_id
+    #             WHERE Students_tmp.student_id IS NULL;""")
+    #         difference['entered_students'] = self._save_partial_result(cursor)
+    #         print("-- entered students")
+    #
+    #         cursor.execute("""-- left students
+    #             SELECT Students_tmp.student_id,
+    #                 Students_tmp.student_name,
+    #                 Students_tmp.student_group AS 'group_id',
+    #                 StudentGroups_tmp.group_name AS 'group_name',
+    #                 Students_tmp.leader
+    #             FROM Students
+    #                 RIGHT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
+    #                 JOIN StudentGroups_tmp ON Students_tmp.student_group = StudentGroups_tmp.group_id
+    #             WHERE Students.student_id IS NULL;""")
+    #         difference['left_students'] = self._save_partial_result(cursor)
+    #         print("-- left students")
+    #
+    #         cursor.execute("""-- leader status
+    #             SELECT Students.student_id,
+    #                 Students.student_name,
+    #                 CASE
+    #                     WHEN Students.leader <> 0 THEN "promotion"
+    #                     WHEN Students.leader = 0 THEN "demotion"
+    #                 END AS status,
+    #                 Students.student_group AS 'group_id',
+    #                 StudentGroups.group_name AS 'group_name'
+    #             FROM Students -- убираем всех только-что зачисленных студентов
+    #                 LEFT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
+    #                 AND Students.leader <> Students_tmp.leader
+    #                 JOIN StudentGroups ON Students.student_group = StudentGroups.group_id
+    #             WHERE Students_tmp.student_id IS NOT NULL;""")
+    #         difference['leader_status'] = self._save_partial_result(cursor)
+    #         print("-- leader status")
+    #
+    #         cursor.execute("""-- group changes
+    #             SELECT Students.student_id,
+    #                 Students.student_name,
+    #                 Students.student_group AS 'new_group_id',
+    #                 Students_tmp.student_group AS 'last_group_id',
+    #                 StudentGroups.group_name AS 'new_group_name',
+    #                 StudentGroups_tmp.group_name AS 'last_group_name'
+    #             FROM Students
+    #                 LEFT JOIN Students_tmp ON Students.student_id = Students_tmp.student_id
+    #                     AND Students.student_group <> Students_tmp.student_group
+    #                 JOIN StudentGroups ON Students.student_group = StudentGroups.group_id
+    #                 JOIN StudentGroups_tmp ON Students_tmp.student_group = StudentGroups_tmp.group_id
+    #             WHERE Students_tmp.student_id IS NOT NULL""")
+    #         difference['group_changes'] = self._save_partial_result(cursor)
+    #         print("-- group changes")
+    #
+    #         print("difference объект создан")
+    #         return difference
 
     def _check_existence(self, column, table, value):
         with self.connection.cursor() as cursor:
@@ -347,3 +347,4 @@ WHERE StudentGroups.group_name = %s
 
     def connection_close(self):
         self.connection.close()
+        print("Соединение с базой данных закрыто")
